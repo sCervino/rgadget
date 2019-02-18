@@ -1,0 +1,191 @@
+---
+title: "Rgadget"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r "setup", include=FALSE}
+#knitr::opts_knit$set(root.dir = '~/rgadget/gadget_example/cod_model')  # with something else than `getwd()`
+```
+
+Rgadget is a set of useful utilities for gadget, a statistical
+multi-species multi-area marine ecosystem modelling toolbox.
+
+This package aids in the developement of Gadget models in a number of
+ways. It can interact with Gadget, by manipulating input files, digest
+output and rudimentary plots.
+
+Prerequisites
+-------------
+Gadget obviously, can be obtained from github.com/hafro/gadget
+
+Installing
+----------
+You can use devtools to install this directly:
+
+```{r,eval=FALSE}
+# install.packages("devtools")
+devtools::install_github("hafro/rgadget")
+```
+
+
+Using
+-----
+To use Rgadget you will need to load it into memory:
+```{r, message=FALSE}
+library(Rgadget)
+
+theme_set(theme_light()) ## set the plot theme (optional)
+
+library(patchwork)  ## optional packages 
+scale_fill_crayola <- function(n = 100, ...) {
+  
+  # taken from RColorBrewer::brewer.pal(12, "Paired")
+  pal <- c("#A6CEE3", "#1F78B4", "#B2DF8A", "#33A02C",
+           "#FB9A99", "#E31A1C", "#FDBF6F", "#FF7F00",
+           "#CAB2D6", "#6A3D9A", "#FFFF99", "#B15928")
+  pal <- rep(pal, n)
+  ggplot2::scale_fill_manual(values = pal, ...)
+  
+}
+```
+
+
+To illustrate the use of Gadget we will use a model for cod in Icelandic waters atteched to the package. You can access the model using the following code: 
+```{r,eval=FALSE}
+system.file('extdata', 'cod_model.tgz', package = 'Rgadget') %>% 
+  untar(exdir = path.expand('./gadget_example/'))
+
+## change the working directory to the location of the gadget model
+setwd('gadget_example/cod_model')
+
+```
+
+To estimate the model parameters the suggested procedure is to use the iterative reweighting approach with is implemented in the `gadget.iterative` function (see `?gadget.iterative` for further details).
+
+
+```{r,eval=FALSE}
+gadget.iterative(main='main',
+                 grouping=list(sind1=c('si.gp1','si.gp1a'),
+                               sind2=c('si.gp2','si.gp2a'),
+                               sind3=c('si.gp3','si.gp3a')),
+                 params.file = 'params.in',
+                 wgts='WGTS')
+```
+
+This function calls Gadget which behind the scenes does the parameter estimation which we will use. To obtain information on the model fit and properties of the model one can use the `gadget.fit` function to query the model:
+
+```{r,message=FALSE}
+fit <- gadget.fit()
+```
+
+The `fit` object is essentially a list of data.frames that contain the likelihood data merged with the model output. 
+
+```{r}
+fit %>% names()
+```
+
+and one can access those data.frames simply by calling their name:
+```{r}
+fit$sidat
+```
+
+For further information on what the relevant data.frames contain refer to the help page for `gadget.fit`. 
+
+In addition a plot routine for the `fit` object is implement in Rgadget. The input to the `plot` function is simply the `gadget.fit` object, the data set one wants to plot and the type. The default plot is a survey index plot:
+```{r}
+plot(fit)
+```
+
+To produce a likelihood summary:
+```{r}
+plot(fit,data='summary')
+```
+
+A weighted summary plot:
+```{r}
+plot(fit,data='summary',type = 'weighted')
+```
+
+and an pie chart of likelihood components:
+```{r}
+plot(fit,data='summary',type='pie')
+```
+
+To plot the fit to catch proportions (either length or age) you simply do:
+```{r}
+tmp <- plot(fit,data = 'catchdist.fleets')
+names(tmp)
+```
+
+and then plot them one by one:
+```{r}
+tmp$alkeys.aut
+```
+```{r}
+tmp$ldist.aut
+```
+
+
+One can also produce bubble plots
+```{r}
+bubbles <- plot(fit,data = 'catchdist.fleets',type='bubble')
+names(bubbles)
+```
+
+Age bubbles
+```{r}
+bubbles$aldist
+```
+
+Length bubbles
+```{r}
+bubbles$ldist
+```
+
+One can also illustrate the fit to growth in the model:
+```{r}
+grplot <- plot(fit,data = 'catchdist.fleets',type='growth')
+names(grplot)
+```
+Illstrate the fit to the autumn survey
+```{r}
+grplot$alkeys.aut
+```
+
+And the fit to maturity data:
+```{r}
+plot(fit,data='stockdist')
+```
+
+And selection by year and step
+```{r}
+plot(fit,data="suitability")
+
+```
+
+Age age compostion
+```{r}
+plot(fit,data='stock.std') + scale_fill_crayola()
+
+```
+
+
+And the standard ices plots
+```{r}
+plot(fit,data='res.by.year',type='total') + theme(legend.position = 'none') +
+  plot(fit,data='res.by.year',type='F') + theme(legend.position = 'none') +
+  plot(fit,data = 'res.by.year',type='catch') + theme(legend.position = 'none') +
+  plot(fit, data='res.by.year',type='rec')
+
+```
+
+
+
+Acknowledgements
+----------------
+
+This project has received funding from the European Union’s Seventh Framework
+Programme for research, technological development and demonstration under grant
+agreement no.613571.

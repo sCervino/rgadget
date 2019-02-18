@@ -191,7 +191,8 @@ eat <- function(PreyInArea,PredInArea,step,opt){
 ##' to calculate the number at age for all \eqn{a}.
 ##' The number in lengthgroup $i$ at age $a$ in timestep 1 can then be
 ##' calculated from:
-##' \deqn{N_{i,a,1} = n_a\left(\Phi\left(\frac{l_{i+1}-\mu_a}{\sigma_a}\right)-\Phi\left(\frac{l_{i}-\mu_a}{\sigma_a}\right)\right)}{N_{i,a,1} = n_a (Phi(l_{i+1}-mu_a)/sigma_a)-Phi(l_{i}-\mu_a)/sigma_a))}
+##' \deqn{N_{i,a,1} = n_a\left(\Phi\left(\frac{l_{i+1}-\mu_a}{\sigma_a}\right)-
+##' \Phi\left(\frac{l_{i}-\mu_a}{\sigma_a}\right)\right)}{N_{i,a,1} = n_a (Phi(l_{i+1}-mu_a)/sigma_a)-Phi(l_{i}-\mu_a)/sigma_a))}
 ##' where \eqn{l_{i}} and \eqn{l_{i+1}} are the endpoints of lengthgroup \eqn{i},
 ##' \eqn{N_{l,a,t}} is the number at age \eqn{a} in lengthgroup \eqn{l} at
 ##' timestep \eqn{t} and \eqn{\Phi}{Phi} is the probability function for Normal
@@ -257,11 +258,13 @@ firststep <- function(n,
 ##' with the lengthvbsimple growth function from Gadget implemented.
 ##' For a fish of age a and length l, mean length growth \eqn{\Delta L} is
 ##' then calculated as:
-##' \deqn{\Delta L =L_{\infty}(1 - \frac{l}{L_{\infty}})(1 - e^{-\kappa \Delta t})}\deqn{Delta L =L_{infty}(1 - l/L_{infty})(1 - e^{-kappa Delta t})}
+##' \deqn{\Delta L =L_{\infty}(1 - \frac{l}{L_{\infty}})(1 - e^{-\kappa \Delta t})}
+##' \deqn{Delta L =L_{infty}(1 - l/L_{infty})(1 - e^{-kappa Delta t})}
 ##' The length distribution is updated using the beta-binomial
 ##' distribution, ie the probability of growing x lengthgroups, given
 ##' maximum lengthgroupgrowth n, is
-##' \deqn{P[X = x] =  \frac{\Gamma(n+1)}{\Gamma(n-x+1)\Gamma(x+1)} \frac{\Gamma(\alpha + \beta)}{\Gamma(n+\alpha+\beta)} \frac{\Gamma(n-x+\beta)}{\Gamma(\beta)} \frac{\Gamma(x+a)}{\Gamma(\alpha)}}
+##' \deqn{P[X = x] =  \frac{\Gamma(n+1)}{\Gamma(n-x+1)\Gamma(x+1)} \frac{\Gamma(\alpha + \beta)}
+##' {\Gamma(n+\alpha+\beta)} \frac{\Gamma(n-x+\beta)}{\Gamma(\beta)} \frac{\Gamma(x+a)}{\Gamma(\alpha)}}
 ##' with \eqn{\alpha = \frac{\beta\Delta L}{n-\Delta L}} to preserve the mean
 ##' lengthgrowth according to the equation equation above. NB: the
 ##' expected value of \eqn{\Delta L} should be taken into consideration when
@@ -451,7 +454,8 @@ suitability <- function(params,
                c(length(L),length(l)))
     
   } else if(tolower(type) == 'exponentiall50' |
-            tolower(type) == 'expsuitfuncl50'){
+            tolower(type) == 'expsuitfuncl50' | 
+            tolower(type) == 'newexponentiall50'){
     S <- array(rep(1/(1+exp(-params[1]*(l - params[2]))),each = length(L)),
                c(length(L),length(l)))
 
@@ -495,6 +499,86 @@ suitability <- function(params,
   return(S)
 }
 
+
+#' Write suitability line for a predator
+#' @param pred Character. The name of the predator
+#' @param prey Character. The preyname of the stock to be eaten
+#' @param fun Character. The selection function for the predator
+#' @param params A list of named parameters that are needed by \code{fun}. 
+#'   Names will be used to output the switches to be used by gadget.
+#'   Alternatively, a vector of numbers can be used.
+#' @return A character vector of the form 
+#'   <preyname> function <functionname> <vector of parameters>
+#' @examples
+#' gadgetstock('garfish', '~', missingOkay=T) %>%
+#'     gadget_update('doeseat',
+#'                    name = 'comm',
+#'                    suitability = pred_suit(pred='garfish',
+#'                                             prey='zebrafish', 
+#'                                             fun='newexponentiall50',
+#'                                             params=list('alpha', 'l50')),
+#'                    data = garfish.consumption[[1]])
+#' @author Paul Frater
+#' @export
+pred_suit <- function(pred=NA,
+                      prey=NA,
+                      fun='newexponentiall50', 
+                      params=NULL) {
+    paste0('\n',
+           paste(prey, 'function', fun, 
+                 ifelse(is.numeric(params),
+                        params,
+                        do.call(paste, lapply(params, function(x) {
+                            if (is.numeric(x)) {
+                                return(x)
+                            } else {
+                                sprintf('#%1$s.%2$s.%3$s',
+                                        pred, prey, x)
+                            }
+                        }))),
+                 sep='\t'))
+}
+
+#' Write suitability line for the surveydistribution likelihood component
+#' @param survey.name Character. The name of the survey
+#' @param stock Character. The name of the stock surveyed
+#' @param fun Character. The selection function for the survey
+#' @param params A list of named parameters that are needed by \code{fun}. 
+#'   Names will be used to output the switches to be used by gadget.
+#'   Alternatively, a vector of numbers can be used.
+#' @return A character vector of the form 
+#'   function <functionname> <vector of parameters>
+#' @examples
+#' gadgetlikelihood('likelihood', '~', missingOkay=T) %>%
+#'    gadget_update('surveydistribution',
+#'                  name = 'ldist.spr',
+#'                  weight = 1,
+#'                  data = ldist.igfs[[1]],
+#'                  parameters = quote(exp(spr.si.beta)) %>%
+#'                                to.gadget.formulae(),
+#'                  suitability = surveydist_suit(stock = 'zebrafish',
+#'                                              fun = 'constant',
+#'                                              params = 1),
+#'                  stocknames = 'zebrafish')
+#' @author Paul Frater
+#' @export
+surveydist_suit <- function(survey.name='survey',
+                            stock=NULL,
+                            fun='newexponentiall50',
+                            params=NULL) {
+    paste0(paste('function', fun, 
+                 ifelse(is.numeric(params),
+                        params,
+                        do.call(paste, lapply(params, function(x) {
+                            if (is.numeric(x)) {
+                                return(x)
+                            } else {
+                                sprintf('#%1$s.%2$s.%3$s',
+                                        stock, survey.name, x)
+                            }
+                        }))),
+                 sep='\t'))
+}
 
 overlap <- function(Abundance,mixing){
   stock.num <- aaply(Abundance,c(1,3),

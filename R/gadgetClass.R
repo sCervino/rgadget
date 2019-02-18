@@ -1,16 +1,16 @@
 #' Gadget growth
 #'
-#' @slot growthfunction
-#' @slot growthimplementation
-#' @slot growthparameters
-#' @slot wgrowthparameters
-#' @slot lgrowthparameters
-#' @slot weightgrowthdata
-#' @slot yeareffect
-#' @slot stepeffect
-#' @slot areaeffect
-#' @slot beta
-#' @slot maxlengthgroupgrowth
+#' @slot growthfunction name of the growth function
+#' @slot growthimplementation name of the growth implementation function
+#' @slot growthparameters parameters for the growth function
+#' @slot wgrowthparameters weight related growth function parameters
+#' @slot lgrowthparameters length related growth function parameters
+#' @slot yeareffect year effect
+#' @slot stepeffect step effect
+#' @slot areaeffect area effect
+#' @slot beta beta for the growth implementation
+#' @slot weigthgrowthdata data on growth in weight
+#' @slot maxlengthgroupgrowth maximum length group growth
 setClass('gadget-growth',
          representation(growthfunction = 'character',
                         growthimplementation = 'character',
@@ -61,8 +61,8 @@ setClass('gadget-prey',
 setClass('gadget-predator',
          representation(suitability = 'data.frame',
                         preference = 'data.frame',
-                        maxconsumption = 'numeric',
-                        halffeedingvalue = 'numeric'))
+                        maxconsumption = 'character',
+                        halffeedingvalue = 'character'))
          ##package = 'rgadget')
 
 setClass('gadget-fleet',

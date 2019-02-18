@@ -13,9 +13,8 @@ read.gadget.model(main.file = "main", model.name = "Gadget-model")
 mainfile object
 }
 \description{
-Read in a Gadget model to a gadget-main object
+Read in a Gadget model to a gadget-main object DEPRECATED
 }
 \author{
 Bjarki Thor Elvarsson
 }
-

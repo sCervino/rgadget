@@ -13,12 +13,8 @@ toDataFrame(sim)
 data.frame
 }
 \description{
-.. content for \description{} (no empty lines) ..
-}
-\details{
-.. content for \details{} ..
+toDataFrame
 }
 \author{
 Bjarki Thor Elvarsson
 }
-

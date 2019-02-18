@@ -17,12 +17,8 @@ aldist(stock.dat, sigma = 0, dl = 1)
 data.frame
 }
 \description{
-.. content for \description{} (no empty lines) ..
-}
-\details{
-.. content for \details{} ..
+Age length dist
 }
 \author{
 Bjarki Thor Elvarsson
 }
-

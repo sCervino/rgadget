@@ -20,6 +20,6 @@ Update a component within this file.
 For more information, see a specific implementation:
 \enumerate{
   \item \link{gadget_update.gadgetstock}
+  \item \link{gadget_update.gadgetlikelihood}
 }
 }
-

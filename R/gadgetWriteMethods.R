@@ -252,10 +252,10 @@ setMethod("gadget_dir_write",
                       row.names = FALSE,
                       col.names = FALSE,
                       quote=FALSE)
-          write.unix('; migratio file',
+          write.unix('; migration file',
                      sprintf('%s/Modelfiles/%s.migratio',
                              rel.dir,x@stockname))
-          l_ply(names(x@migrationratio),
+          plyr::l_ply(names(x@migrationratio),
                 function(y){
                   migratio <- sprintf('%s/Modelfiles/%s.migratio',
                                       rel.dir,x@stockname)
@@ -270,19 +270,19 @@ setMethod("gadget_dir_write",
         }
 
         if(x@doesrenew == 1){
-          if(ncol(x@renewal.data==9)){
+          if(ncol(x@renewal.data) == 9){
             rec.type <- 'normalparam'
 
-          } else if(ncol(x@renewal.data==8)){
+          } else if(ncol(x@renewal.data) == 8){
             rec.type <- 'normalcond'
 
-          } else if(ncol(x@renewal.data==6)){
+          } else if(ncol(x@renewal.data) == 6){
             rec.type <- 'number'
 
           }
           stock.text['renewal'] <-
             paste(paste(names(x@renewal),
-                        laply(x@renewal,
+                        plyr::laply(x@renewal,
                               function(x)
                               paste(x,collapse=' ')),
                         sep='\t',collapse = '\n'),
@@ -315,8 +315,12 @@ setMethod("gadget_dir_write",
                   sprintf('coefficients %s',
                           paste(x@coefficients,collapse='\t')),
                   sep='\n')
+          if(x@maturitysteps != ''){
+            maturityfile <- 
+              paste(maturityfile, sprintf('maturitysteps\t%s',x@maturitysteps))
+          }
           write.unix(maturityfile,f=sprintf('%s/Modelfiles/%s.maturity',
-                                      gd$dir,x@stockname))
+                                            rel.dir,x@stockname))
 
         }
         if(x@doesmove == 1){
@@ -344,11 +348,11 @@ setMethod("toString",
                 params = '',
                 sprintf('beta\t%s',x@beta),
                 sprintf('maxlengthgroupgrowth\t%s',x@maxlengthgroupgrowth))
-            if(x@growthfunction == 'lengthvbsimple'){
+            if(tolower(x@growthfunction) == 'lengthvbsimple'){
               growth.text['params'] <-
                 paste(sprintf('growthparameters\t%s',
                               paste(x@growthparameters,collapse = '\t')))
-            } else if(x@growthfunction == 'weightvb'){
+            } else if(tolower(x@growthfunction) == 'weightvb'){
               growth.text['params'] <-
                 paste(sprintf('wgrowthparameters\t%s',
                               paste(x@wgrowthparameters,collapse = '\t')),
@@ -405,9 +409,21 @@ setMethod("gadget_dir_write",
                   col.names=FALSE,
                   quote=FALSE,sep='\t',row.names=FALSE)
       if(file.exists(sprintf('%s/Modelfiles/fleets',gd$dir))){
-          write.unix(paste(fleet.text,collapse='\n'),
+		  ## added by Paul Frater to test if fleet file already contains fleet names
+          ## if so, overwrite the file, if not append fleet to fleet file
+          fleetFile <- file(sprintf('%s/Modelfiles/fleets', gd$dir))
+          fleetLines <- readLines(fleetFile)
+		  close(fleetFile)
+          if(any(grepl(x@name, fleetLines))) {
+	  		    write.unix(paste(fleet.text,collapse='\n'),
+                     f=sprintf('%s/Modelfiles/fleets',gd$dir), 
+					 append = FALSE)
+		  }
+          else {
+			    write.unix(paste(fleet.text,collapse='\n'),
                      f=sprintf('%s/Modelfiles/fleets',gd$dir),
                      append = TRUE)
+		  }
       } else {
         write.unix(paste(fleet.text,collapse='\n'),
                    f=sprintf('%s/Modelfiles/fleets',gd$dir))
@@ -416,9 +432,7 @@ setMethod("gadget_dir_write",
     }
 ) 
 
-##' .. content for \description{} (no empty lines) ..
-##'
-##' .. content for \details{} ..
+
 ##' @title Write gadget main
 ##' @return NULL
 ##' @author Bjarki Thor Elvarsson
